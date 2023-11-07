@@ -19,17 +19,12 @@ use TelegramBot\Api\Types\ReplyKeyboardMarkup;
  * @package TelegramBot\Api
  * @method Message editMessageText(string $chatId, int $messageId, string $text, string $parseMode = null, bool $disablePreview = false, ReplyKeyboardMarkup|ForceReply|ReplyKeyboardRemove|InlineKeyboardMarkup|null $replyMarkup = null, string $inlineMessageId = null)
  */
-class Client
+class Client extends BotApi
 {
     /**
      * RegExp for bot commands
      */
     const REGEXP = '/^(?:@\w+\s)?\/([^\s@]+)(@\S+)?\s?(.*)$/';
-
-    /**
-     * @var \TelegramBot\Api\BotApi
-     */
-    protected $api;
 
     /**
      * @var \TelegramBot\Api\Events\EventCollection
@@ -49,7 +44,7 @@ class Client
         if ($trackerToken) {
             @trigger_error(sprintf('Passing $trackerToken to %s is deprecated', self::class), \E_USER_DEPRECATED);
         }
-        $this->api = new BotApi($token, $trackerToken, $httpClient, $endpoint);
+        parent::__construct($token, $trackerToken, $httpClient, $endpoint);
         $this->events = new EventCollection($trackerToken);
     }
 
@@ -169,7 +164,7 @@ class Client
      */
     public function run()
     {
-        if ($data = BotApi::jsonValidate((string) $this->getRawBody(), true)) {
+        if ($data = BotApi::jsonValidate((string)$this->getRawBody(), true)) {
             /** @var array $data */
             $this->handle([Update::fromResponse($data)]);
         }
@@ -198,7 +193,7 @@ class Client
                 return true;
             }
 
-            preg_match(self::REGEXP, (string) $message->getText(), $matches);
+            preg_match(self::REGEXP, (string)$message->getText(), $matches);
 
             if (isset($matches[3]) && !empty($matches[3])) {
                 $parameters = str_getcsv($matches[3], chr(32));
@@ -483,11 +478,6 @@ class Client
      */
     public function __call($name, array $arguments)
     {
-        if (method_exists($this, $name)) {
-            return call_user_func_array([$this, $name], $arguments);
-        } elseif (method_exists($this->api, $name)) {
-            return call_user_func_array([$this->api, $name], $arguments);
-        }
         throw new BadMethodCallException("Method {$name} not exists");
     }
 }
